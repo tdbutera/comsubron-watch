@@ -538,24 +538,40 @@
   };
   /* ======================================================= */
 
+  /* The exact count + bar only show once we're this far to goal, so a low
+     early number doesn't read as "nobody's buying." Below it: honest "open
+     for reservations" + the live countdown, but no discouraging figure.
+     Set to 0 to always show the precise numbers. */
+  const REVEAL_AT = 0.6;
+
   const $ = id => document.getElementById(id);
   const state = Object.assign({}, FALLBACK);
 
-  function render(){
+    function render(){
     const orders = Math.max(0, state.orders | 0);
     const goal   = Math.max(1, state.goal   | 0);
     const remaining = Math.max(0, goal - orders);
+    const pct = orders / goal;
+    const reached = remaining === 0;
+    const reveal = reached || pct >= REVEAL_AT;
+    const bar = $('bar-fill').parentElement;
+    const meta = document.querySelector('.progress-meta');
 
-    $('bar-fill').style.width = Math.min(100, Math.round(orders / goal * 100)) + '%';
-    $('count-now').textContent  = orders;
-    $('count-goal').textContent = goal;
-
-    if(remaining > 0){
-      $('t-remaining').textContent = remaining;
+    if(reached){
+      $('ticker-msg').innerHTML    = '<b>Goal reached &mdash; production has started.</b> Thank you!';
+      $('deadline-note').innerHTML = '<b>Goal reached</b> &mdash; production underway';
+      bar.style.display = '';
+      $('bar-fill').style.width = '100%';
+      meta.innerHTML = '<span><b>' + orders + '</b> reserved</span><span>Production underway</span>';
+    } else if(reveal){
+      bar.style.display = '';
+      $('bar-fill').style.width = Math.min(100, Math.round(pct * 100)) + '%';
+      meta.innerHTML = '<span><b>' + orders + '</b> reserved</span><span>Goal: <b>' + goal + '</b> paid orders to start production</span>';
+      $('ticker-msg').innerHTML = 'Group preorder &middot; <b>' + remaining + ' more orders needed</b> to start production';
     } else {
-      // MOQ reached — flip to honest, celebratory messaging.
-      $('ticker-msg').innerHTML   = '<b>Goal reached — production has started.</b> Thank you!';
-      $('deadline-note').innerHTML = '<b>Goal reached</b> — production underway';
+      bar.style.display = 'none';
+      meta.innerHTML = '<span>Reservations are open &mdash; be one of the first to lock in your COMSUBRON ONE watch.</span>';
+      $('ticker-msg').innerHTML = 'Group preorder open &middot; <b>production begins once the run is filled</b>';
     }
     tick();
   }
